@@ -43,8 +43,6 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
                     ncol = cols, nrow = ceiling(numPlots/cols))
   }
   
-  
-
  if (numPlots==1) {
     print(plots[[1]])
 
@@ -127,11 +125,9 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     ```{R, fig.width=4, fig.height=4, fig.align="center"}
     gg.CSQPlot(CKD.numeric,label="Chronic Kidney Disease")
     gg.CSQPlot(log(CKD.numeric),label="Chronic Kidney Disease")
-
     ```
-Log transformation doesn't apply to this data. 
 
-
+    Log transformation doesn’t apply to this data. 
 
 2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
 
