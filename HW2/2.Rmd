@@ -3,7 +3,7 @@ output:
   pdf_document:
     latex_engine: pdflatex
 title: "S&DS 563 / F&ES 758b - Multivariate Statistics Homework #2\nPrinciple Components Analysis"
-author: Lanxin Jiang, Yazhi Sun, Chenglin Lu
+author: Lanxin Jiang (lj345), Grace Sun (ys544), Chenglin Lu (cl939)
 date: "`r Sys.Date()`"
 geometry: margin=0.5in
 ---
