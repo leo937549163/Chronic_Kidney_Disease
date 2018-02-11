@@ -127,7 +127,7 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     gg.CSQPlot(log(CKD.numeric),label="Chronic Kidney Disease")
     ```
 
-2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure – in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
+2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure - in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
 
     ```{R}
     library(ggcorrplot)
@@ -149,7 +149,7 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     pc1=princomp(CKD.numeric, cor=TRUE)
 
     #print results
-    print(summary(pc1),digits=2,loadings=pc1$loadings,cutoff=0)
+    print(summary(pc1), digits=2, loadings=pc1$loadings, cutoff=0)
     #view eigenvalues (note that R gives square-root of eigenvalues
     #which is why I square them)
     pc1$sdev^2
