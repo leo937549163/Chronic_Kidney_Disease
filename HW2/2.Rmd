@@ -153,7 +153,7 @@ Log transformation doesn't apply to this data.
     pc1=princomp(CKD.numeric, cor=TRUE)
 
     #print results
-    print(summary(pc1),digits=2,loadings=pc1$loadings,cutoff=0)
+    print(summary(pc1), digits=2, loadings=pc1$loadings, cutoff=0)
     #view eigenvalues (note that R gives square-root of eigenvalues
     #which is why I square them)
     pc1$sdev^2
