@@ -127,7 +127,7 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     gg.CSQPlot(log(CKD.numeric),label="Chronic Kidney Disease")
     ```
 
-2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure – in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
+2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
 
     ```{R}
     library(ggcorrplot)
@@ -164,6 +164,6 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
 
 4. For principle components you decide to retain, examine the loadings (principle components) and think about an interpretation for each retained component if possible.
 
-5. Make a score plot of the scores for at least two pairs of component scores (one and two, one and three, two and three, etc).  Discuss any trends/groupings you observe. **As a bonus, try to make a 95% Confidence Ellipse for two of your components**. You might want to also try making a bi-plot if you’re using R.
+5. Make a score plot of the scores for at least two pairs of component scores (one and two, one and three, two and three, etc).  Discuss any trends/groupings you observe. **As a bonus, try to make a 95% Confidence Ellipse for two of your components**. You might want to also try making a bi-plot if you are using R.
 
 6. Write a paragraph summarizing your findings, and your opinions about the effectiveness of using principle components on this data.  Include evidence based on scatterplots of linearity in higher dimensional space, note any multivariate outliers in your score plot, comment on sample size relative to number of variables, etc.
