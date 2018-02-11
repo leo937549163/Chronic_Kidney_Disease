@@ -127,9 +127,13 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     ```{R, fig.width=4, fig.height=4, fig.align="center"}
     gg.CSQPlot(CKD.numeric,label="Chronic Kidney Disease")
     gg.CSQPlot(log(CKD.numeric),label="Chronic Kidney Disease")
-    ```
 
-2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure – in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
+    ```
+Log transformation doesn't apply to this data. 
+
+
+
+2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
 
     ```{R}
     library(ggcorrplot)
@@ -151,21 +155,58 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     pc1=princomp(CKD.numeric, cor=TRUE)
 
     #print results
-    print(summary(pc1),digits=2,loadings=pc1$loadings,cutoff=0)
+    print(summary(pc1), digits=2, loadings=pc1$loadings, cutoff=0)
     #view eigenvalues (note that R gives square-root of eigenvalues
     #which is why I square them)
     pc1$sdev^2
     #Comp1 and Comp2 larger than 1
 
-    #view eigenvectors
-    pc1$loadings
-
+    
     #make a screeplot  
     screeplot(pc1,type="lines",col="red",lwd=2,pch=19,cex=1.2,main="Scree Plot")
     ```
 
+
+
+```{r}
+#perform parallel analysis
+#get the function online
+source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
+#make the parallel analysis plot
+parallelplot(pc1)
+#this plot is not appropriate here because unnormality
+```
+
+
+
 4. For principle components you decide to retain, examine the loadings (principle components) and think about an interpretation for each retained component if possible.
 
-5. Make a score plot of the scores for at least two pairs of component scores (one and two, one and three, two and three, etc).  Discuss any trends/groupings you observe. **As a bonus, try to make a 95% Confidence Ellipse for two of your components**. You might want to also try making a bi-plot if you’re using R.
+```{r}
+#view eigenvectors
+    pc1$loadings
+```
+
+
+
+5. Make a score plot of the scores for at least two pairs of component scores (one and two, one and three, two and three, etc).  Discuss any trends/groupings you observe. **As a bonus, try to make a 95% Confidence Ellipse for two of your components**. You might want to also try making a bi-plot if you are using R.
+
+
+
+```{r}
+#make scoreplot with confidence ellipse : 
+#  c(1,2) specifies to use components 1 and 2
+#get function from online
+source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
+
+#run the function
+ciscoreplot(pc1,c(1,2),c(1:pc1$n.obs))
+
+
+#make a biplot for first two components
+biplot(pc1,choices=c(1,2),pc.biplot=T)
+
+```
+
+
 
 6. Write a paragraph summarizing your findings, and your opinions about the effectiveness of using principle components on this data.  Include evidence based on scatterplots of linearity in higher dimensional space, note any multivariate outliers in your score plot, comment on sample size relative to number of variables, etc.
