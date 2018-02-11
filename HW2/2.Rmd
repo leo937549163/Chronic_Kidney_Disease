@@ -44,6 +44,8 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
                     ncol = cols, nrow = ceiling(numPlots/cols))
   }
+  
+  
 
  if (numPlots==1) {
     print(plots[[1]])
