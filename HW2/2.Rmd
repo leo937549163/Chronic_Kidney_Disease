@@ -122,11 +122,13 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     multiplot(p1, p2, p3, p4, cols=2)
     ```
 
-look for non-linearity, get correlation, make histograms all at once
-```{r}
-chart.Correlation(CKD.numeric, histogram=TRUE, pch=19)
-```
-From the above QQ plot and histograms, we could observe that most of our variables don’t follow the univariate normal distribution. Age and RBCC seem to be normal. Some of the other variables are left-skewed, while some are right-skewed.  
+    look for non-linearity, get correlation, make histograms all at once
+
+    ```{R, warning=F}
+    chart.Correlation(CKD.numeric, histogram=TRUE, pch=19)
+    ```
+
+    From the above QQ plot and histograms, we could observe that most of our variables don’t follow the univariate normal distribution. Age and RBCC seem to be normal. Some of the other variables are left-skewed, while some are right-skewed.  
 
     **THEN** make a chi-square quantile plot of the data. Turn in your chi-square quantile plot as appropriate and comment on what you see.
 
@@ -137,7 +139,7 @@ From the above QQ plot and histograms, we could observe that most of our variabl
     gg.CSQPlot(log(CKD.numeric),label="Chronic Kidney Disease")
     ```
 
-Our data doesn’t have multivariat normality. In addition, log transformation doesn’t apply to this data. By testing other transformation methods, we conclude that it isn’t appropriate to use transformation to achieve normality for our data.
+    Our data doesn’t have multivariat normality. In addition, log transformation doesn’t apply to this data. By testing other transformation methods, we conclude that it isn’t appropriate to use transformation to achieve normality for our data.
 
 2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
 
@@ -150,7 +152,8 @@ Our data doesn’t have multivariat normality. In addition, log transformation d
         ggtheme = ggplot2::theme_gray,
         colors = c("#6D9EC1", "white", "#E46726"))
     ```
-From the above correlation matrix plot, the more "orange" indicates that two variables more positively correlated, and the more "blue" indicates more negative correlation. We could observe some negative correlation and some positive ones, but nearly half of them have very little correlation. PCA could work for this data because of some of the correlation, but it might not work so effectively.  
+
+    From the above correlation matrix plot, the more "orange" indicates that two variables more positively correlated, and the more "blue" indicates more negative correlation. We could observe some negative correlation and some positive ones, but nearly half of them have very little correlation. PCA could work for this data because of some of the correlation, but it might not work so effectively.  
 
 
 3. Perform Principle components analysis using the Correlation matrix (standardized variables). Think about how many principle components to retain.  To make this decision look at
@@ -163,93 +166,68 @@ From the above correlation matrix plot, the more "orange" indicates that two var
     ```{R, results='asis', fig.width=5, fig.height=3.5, fig.align="center"}
     library(factoextra)
 
-    pc1=princomp(CKD.numeric, cor=TRUE)
+    pc1 <- princomp(CKD.numeric, cor=TRUE)
 
-    #print results
-    print(summary(pc1), digits=2, loadings=pc1$loadings, cutoff=0)
-    #view eigenvalues as the square of the square-root of eigenvalues 
-    pc1$sdev^2
-    #Comp1 and Comp2 larger than 1
-
-    #make a screeplot  
-    screeplot(pc1,type="lines",col="red",lwd=2,pch=19,cex=1.2,main="Scree Plot")
-    #perform parallel analysis
-  #get the function online
-  source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
-  #make the parallel analysis plot
-  parallelplot(pc1)
-  #this plot is not appropriate here because nonnormality.
-    ```
-The first two compenents explain 54% variability. 91% of the overall variability is explained by the first seven principal components. 
-The first two eigenvalues are larger than 1. 
-The 'scree plot elbow' method shows that the first two components should retain.
-Even thought the parallel analysis also shows the first two components should retain, this method isn’t appropriate due to nonnormality.
-
-
-    pc1 <- prcomp(CKD.numeric, scale=TRUE)
-
-
-    # Importance
-    pander(summary(pc1)$importance, round=2, split.table = Inf)
+    # Importance | stats:::print.summary.princomp
+    vars <- pc1$sdev^2
+    vars <- vars/sum(vars)
+    pander(rbind(`Standard deviation` = pc1$sdev, `Proportion of Variance` = vars, 
+        `Cumulative Proportion` = cumsum(vars)),
+        split.table = Inf,
+        caption = "Importance of components"
+    )
 
     # Screeplot
     fviz_screeplot(pc1, choice="eigenvalue")
     fviz_screeplot(pc1, choice="variance")
+
+    source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
+
+    # Parallel analysis plot
+    parallelplot(pc1)
     ```
 
+    The first two compenents explain 54% variability. 91% of the overall variability is explained by the first seven principal components.
 
-```{R}
-# #perform parallel analysis
-# #get the function online
-# source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
-# #make the parallel analysis plot
-# parallelplot(pc1)
-# #this plot is not appropriate here because unnormality
-```
+    The first two eigenvalues are larger than 1.
+
+    The 'scree plot elbow' method shows that the first two components should retain.
+
+    Even thought the parallel analysis also shows the first two components should retain, this method isn’t appropriate due to nonnormality.
 
 4. For principle components you decide to retain, examine the loadings (principle components) and think about an interpretation for each retained component if possible.
 
-```{r}
-#view loadings
-    pc1$loadings
-```
-Component one is mostly hemoglobin(hemo) and packed cell volume(pcv), component two is mostly age, potassium(pot), white blood cell count(wbcc). Here our cutoff is 0.4. These two components can explain 54% of the variability. There might be clinical explanation for this result. Kidney experts could dig deeper into this phenomenon.
+    ```{R}
+    # Loadings
+    pander(unclass(pc1$loadings), split.table = Inf)
+    ```
 
-```{R}
-# Loading | Rotation
-pander(pc1$rotation, round=2, split.table = Inf)
-```
+    Component one is mostly hemoglobin(hemo) and packed cell volume(pcv), component two is mostly age, potassium(pot), white blood cell count(wbcc). Here our cutoff is 0.4. These two components can explain 54% of the variability. There might be clinical explanation for this result. Kidney experts could dig deeper into this phenomenon.
 
 5. Make a score plot of the scores for at least two pairs of component scores (one and two, one and three, two and three, etc).  Discuss any trends/groupings you observe. **As a bonus, try to make a 95% Confidence Ellipse for two of your components**. You might want to also try making a bi-plot if you are using R.
 
+    ```{R, fig.width=5, fig.height=3.5, fig.align="center"}
+    #make scoreplot with confidence ellipse : 
+    #  c(1,2) specifies to use components 1 and 2
+    #get function from online
 
+    source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
 
-```{r}
-#make scoreplot with confidence ellipse : 
-#  c(1,2) specifies to use components 1 and 2
-#get function from online
+    #run the function
+    ciscoreplot(pc1,c(1,2),c(1:pc1$n.obs))
 
-# source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
+    # Biplot for first two components
+    fviz_pca_biplot(pc1, repel = F,
+                col.var = "#2E9FDF", # Variables color
+                col.ind = "#696969"  # Individuals color
+                )
+    ```
 
-# #run the function
-# ciscoreplot(pc1,c(1,2),c(1:pc1$n.obs))
+    By projecting our data onto the two-dimensional subspace defined by the first and second, or the first and the third principal component axes, we could observe obvious groupings of the black points and  some outliers(blue plots), with the red circle as the 95% confidence ellipse. However, the score plot isn’t appropraite to our data because our variables don’t follow the multivariate normal distribution. 
 
-
-# #make a biplot for first two components
-# biplot(pc1,choices=c(1,2),pc.biplot=T)
-
-source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
-#run the function
-ciscoreplot(pc1,c(1,2),c(1:pc1$n.obs))
-ciscoreplot(pc1,c(1,3),c(1:pc1$n.obs))
-#make a biplot for first two components
-biplot(pc1,choices=c(1,2),pc.biplot=T)
-```
-
-By projecting our data onto the two-dimensional subspace defined by the first and second, or the first and the third principal component axes, we could observe obvious groupings of the black points and  some outliers(blue plots), with the red circle as the 95% confidence ellipse. However, the score plot isn't appropraite to our data because our variables don't follow the multivariate normal distribution. 
-The biplot shows the plot of the principal component scores onto which is superimposed a vector representing the coefficients for each of the original variables. Hemoglobin(hemo) and packed cell volume(pcv) are the main vectors in the horizontal (PC1) direction, so we know that the points 254, 247 have unusually small values for these variables.
+    The biplot shows the plot of the principal component scores onto which is superimposed a vector representing the coefficients for each of the original variables. Hemoglobin(hemo) and packed cell volume(pcv) are the main vectors in the horizontal (PC1) direction, so we know that the points 254, 247 have unusually small values for these variables.
 
 
 6. Write a paragraph summarizing your findings, and your opinions about the effectiveness of using principle components on this data.  Include evidence based on scatterplots of linearity in higher dimensional space, note any multivariate outliers in your score plot, comment on sample size relative to number of variables, etc.
 
-The first two components can explain 54% of the variability. Our dataset has obvious correlation between some variables but not among others. Scatterplots of linearity shows variables have linearity but may not be obvious enough. We found some outliers in our score plot and bi-plot. We have 215 observations and 11 variables in the complete case. The ratio of observation to variable is larger than 10, so this sample size works well for PCA. Overall, PCA is effective for this data because of high correlation between some variables, but this method has some limitations in that there is little correlation between certain variables and nonnormality of our variables. 
+    The first two components can explain 54% of the variability. Our dataset has obvious correlation between some variables but not among others. Scatterplots of linearity shows variables have linearity but may not be obvious enough. We found some outliers in our score plot and bi-plot. We have 215 observations and 11 variables in the complete case. The ratio of observation to variable is larger than 10, so this sample size works well for PCA. Overall, PCA is effective for this data because of high correlation between some variables, but this method has some limitations in that there is little correlation between certain variables and nonnormality of our variables. 
