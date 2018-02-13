@@ -228,7 +228,7 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
                 )
     ```
 
-      The biplot shows the plot of the principal component scores onto which is superimposed a vector representing the coefficients for each of the original variables. Hemoglobin(hemo) and packed cell volume(pcv) are the main vectors in the horizontal (PC1) direction, so we know that the points 254, 247 have unusually small values for these variables.
+    The biplot shows the plot of the principal component scores onto which is superimposed a vector representing the coefficients for each of the original variables. Hemoglobin(hemo) and packed cell volume(pcv) are the main vectors in the horizontal (PC1) direction, so we know that the points 254, 247 have unusually small values for these variables.
 
 
 6. Write a paragraph summarizing your findings, and your opinions about the effectiveness of using principle components on this data.  Include evidence based on scatterplots of linearity in higher dimensional space, note any multivariate outliers in your score plot, comment on sample size relative to number of variables, etc.
