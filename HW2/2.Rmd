@@ -128,7 +128,7 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
     chart.Correlation(CKD.numeric, histogram=TRUE, pch=19)
     ```
 
-    From the above QQ plot and histograms, we could observe that most of our variables don’t follow the univariate normal distribution. Age and RBCC seem to be normal. Some of the other variables are left-skewed, while some are right-skewed.  
+    From the above Q-Q plots and histograms, we could observe that most of our variables don't follow the univariate normal distribution. Age and RBCC seem to be normal. BP, BGR, BU, SC, and WBCC are left-skewed, while the others are right-skewed.  
 
     **THEN** make a chi-square quantile plot of the data. Turn in your chi-square quantile plot as appropriate and comment on what you see.
 
@@ -136,10 +136,11 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
 
     ```{R, fig.width=4, fig.height=4, fig.align="center"}
     gg.CSQPlot(CKD.numeric,label="Chronic Kidney Disease")
+    #log transform our data
     gg.CSQPlot(log(CKD.numeric),label="Chronic Kidney Disease")
     ```
 
-    Our data doesn’t have multivariat normality. In addition, log transformation doesn’t apply to this data. By testing other transformation methods, we conclude that it isn’t appropriate to use transformation to achieve normality for our data.
+    Our data doesn't have multivariat normality. In addition, log transformation doesn't apply to this data. By testing other transformation methods, we conclude that it isn't appropriate to use transformation to achieve normality for our data.
 
 2. Compute the correlation matrix between all variables (SAS and SPSS will provide this for you as part of the PCA procedure in SPSS, click on DESCRIPTIVES. In R use the cor() function.). Comment on relationships you do/do not observe. Do you think PCA will work well?
 
@@ -153,7 +154,7 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
         colors = c("#6D9EC1", "white", "#E46726"))
     ```
 
-    From the above correlation matrix plot, the more "orange" indicates that two variables more positively correlated, and the more "blue" indicates more negative correlation. We could observe some negative correlation and some positive ones, but nearly half of them have very little correlation. PCA could work for this data because of some of the correlation, but it might not work so effectively.  
+    From the above correlation matrix plot, the more "orange" indicates that two variables more positively correlated, and the more "blue" indicates more negative correlation. We could observe some negative correlation and some positive ones, but nearly half of them are rarely correlated with one another. PCA could work for this data because of some of the correlation, but it might not work so effectively.  
 
 
 3. Perform Principle components analysis using the Correlation matrix (standardized variables). Think about how many principle components to retain.  To make this decision look at
@@ -193,7 +194,7 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
 
     The 'scree plot elbow' method shows that the first two components should retain.
 
-    Even thought the parallel analysis also shows the first two components should retain, this method isn’t appropriate due to nonnormality.
+    Even though the parallel analysis also shows the first two components should retain, this method isn't appropriate due to nonnormality.
 
 4. For principle components you decide to retain, examine the loadings (principle components) and think about an interpretation for each retained component if possible.
 
@@ -215,7 +216,11 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
 
     #run the function
     ciscoreplot(pc1,c(1,2),c(1:pc1$n.obs))
-
+    ```
+    
+    By projecting our data onto the two-dimensional subspace defined by the first and second, or the first and the third principal component axes, we could observe obvious groupings of the black points and  some outliers(blue plots), with the red circle as the 95% confidence ellipse. However, the score plot isn't appropraite to our data because our variables don't follow the multivariate normal distribution.
+     
+    ```{R, fig.width=5, fig.height=3.5, fig.align="center"}
     # Biplot for first two components
     fviz_pca_biplot(pc1, repel = F,
                 col.var = "#2E9FDF", # Variables color
@@ -223,11 +228,9 @@ gg.CSQPlot<-function(vars, label="Chi-Square Quantile Plot"){
                 )
     ```
 
-    By projecting our data onto the two-dimensional subspace defined by the first and second, or the first and the third principal component axes, we could observe obvious groupings of the black points and  some outliers(blue plots), with the red circle as the 95% confidence ellipse. However, the score plot isn’t appropraite to our data because our variables don’t follow the multivariate normal distribution. 
-
-    The biplot shows the plot of the principal component scores onto which is superimposed a vector representing the coefficients for each of the original variables. Hemoglobin(hemo) and packed cell volume(pcv) are the main vectors in the horizontal (PC1) direction, so we know that the points 254, 247 have unusually small values for these variables.
+      The biplot shows the plot of the principal component scores onto which is superimposed a vector representing the coefficients for each of the original variables. Hemoglobin(hemo) and packed cell volume(pcv) are the main vectors in the horizontal (PC1) direction, so we know that the points 254, 247 have unusually small values for these variables.
 
 
 6. Write a paragraph summarizing your findings, and your opinions about the effectiveness of using principle components on this data.  Include evidence based on scatterplots of linearity in higher dimensional space, note any multivariate outliers in your score plot, comment on sample size relative to number of variables, etc.
 
-    The first two components can explain 54% of the variability. Our dataset has obvious correlation between some variables but not among others. Scatterplots of linearity shows variables have linearity but may not be obvious enough. We found some outliers in our score plot and bi-plot. We have 215 observations and 11 variables in the complete case. The ratio of observation to variable is larger than 10, so this sample size works well for PCA. Overall, PCA is effective for this data because of high correlation between some variables, but this method has some limitations in that there is little correlation between certain variables and nonnormality of our variables. 
+    The first two components can explain 54% of the variability. Our dataset has obvious correlation between some variables but not among others. Scatterplots of linearity shows variables have linearity but may not be obvious enough. We found some outliers in our score plot and bi-plot. We have 215 observations and 11 variables in the complete case. The ratio of observation to variable is larger than 10, so this sample size works well for PCA. Overall, PCA is effective for this data because of high correlation between some variables, but this method has some limitations in that there is little correlation between certain variables and nonnormality of this dataset. 
