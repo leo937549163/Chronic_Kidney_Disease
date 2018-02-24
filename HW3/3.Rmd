@@ -8,240 +8,258 @@ date: "`r Sys.Date()`"
 geometry: margin=0.5in
 ---
 
-#1. Think about what metrics are appropriate for your data 
-    based on data type. Write a few sentences about this. 
-    Also think about whether you should standardize or transform your data (comment as appropriate).
+1. Think about what metrics are appropriate for your data based on data type. Write a few sentences about this. Also think about whether you should standardize or transform your data (comment as appropriate).
 
-```{R, echo=F, eval=F}
-setwd("~/Documents/S&DS 563/HW3")
-library(knitr)
-# https://archive.ics.uci.edu/ml/datasets/chronic_kidney_disease
-```
+    ```{R, echo=F, eval=F}
+    setwd("~/Documents/S&DS 563/HW3")
+    library(knitr)
+    knitr::opts_chunk$set(fig.align="center")
+    # https://archive.ics.uci.edu/ml/datasets/chronic_kidney_disease
+    ```
 
-```{R}
-library(RWeka)
-CKD <- read.arff("../Chronic_Kidney_Disease/chronic_kidney_disease_full.arff")
-id <- rownames(CKD)
-CKD <- cbind(id=id, CKD)
-# Only Numeric Variables
-CKD.numeric <- CKD[,c(1:3,11:19)]
-# Remove Missing Observations
-CKD.numeric <- CKD.numeric[complete.cases(CKD.numeric),]
+    ```{R}
+    library(RWeka)
+    CKD <- read.arff("../Chronic_Kidney_Disease/chronic_kidney_disease_full.arff")
+    # Only Numeric Variables
+    CKD.numeric <- CKD[,c(1:2,10:18)]
+    # Remove Missing Observations
+    CKD.numeric <- CKD.numeric[complete.cases(CKD.numeric),]
 
-write.csv(CKD.numeric, "../Chronic_Kidney_Disease/CKD_numeric.csv")
-```
+    # get standard deviation for each patient
+    round(sqrt(apply(CKD.numeric,2,var)),2)
+    CKD.Norm <- scale(CKD.numeric)
+    ```
 
-what "matrices???"
+    Standardize our data is necessary because their standard deviation varies a lot.
 
-```{r}
-#get standard deviation for each patient
-round(sqrt(apply(CKD.numeric[,-1],2,var)),2)
-CKD.Norm<-scale(CKD.numeric[,-1])
-```
-Standardize our data is necessary because their standard deviation varies a lot. 
+2. Try various forms of hierarchical cluster analysis. Try at least two different metrics and two agglomeration methods. Produce dendrograms and comment on what you observe.
 
-#2. Try various forms of hierarchical cluster analysis. 
- Try at least two different metrics and two agglomeration methods. 
-  Produce dendrograms and comment on what you observe.
-Method 1 : Euclidean distance
-```{r}
-#get the distance matrix
-dist1<-dist(CKD.Norm[,-1],method="euclidean")
-#now do clustering;
-clust1<-hclust(dist1,method="ward")
-#draw the dendrogram
-plot(clust1,labels=CKD.numeric[,1],cex=0.5,xlab="",ylab="Distance"
-     ,main="Clustering for Patients")
-rect.hclust(clust1,k=3)
+    ```{R, fig.width=6, fig.height=4}
+    K <- 3
+    ```
 
-#get membership vector 
-cuts=cutree(clust1,k=3)
-cuts
+    Method 1: Euclidean distance
 
-#Make plot of three cluster solution in space desginated by first two principal components
-
-clusplot(CKD.Norm, cuts, color=TRUE, shade=TRUE, labels=2, lines=0,
-         main="Three Cluster Plot, Ward's Method, First two PC")
-#Make plot of three cluster solution in space desginated by first two
-#  two discriminant functions
-
-plotcluster(CKD.Norm, cuts, main="Three Cluster Solution in DA Space",
-            xlab="First Discriminant Function", ylab="Second Discriminant Function")
-
-
-```
-
-
-
-Method2:
-```{r}
-#for other distance metrics, use the VEGAN package
-library(vegan)
-#get the distance matrix
-dist2<-vegdist(CKD.Norm[,-1], method="jaccard", upper=T)
-
-#now do clustering - use WARD's method
-clust2<-hclust(dist2,method="ward.D")
-
-#draw the dendrogram
-plot(clust2,labels= CKD.Norm[,1], cex=0.5, xlab="",ylab="Distance",main="Clustering for NASA Understory Data")
-rect.hclust(clust2,k=3)
-
-#get membership vector (which country is in which group)
-cuts2=cutree(clust2,k=3)
-cuts2
-
-#Make plot of two cluster solution in space desginated by first two principal components
-
-clusplot(CKD.Norm, cuts2, color=TRUE, shade=TRUE, labels=2, lines=0,
-         main="Three Cluster Plot, Ward's Method, First two PC")
-
-#Make plot of two cluster solution in space desginated by first two
-#  two discriminant functions
-
-plotcluster(CKD.Norm, cuts2, main="Three Cluster Solution in DA Space",
-            xlab="First Discriminant Function", ylab="Second Discriminant Function")
-
-
-```
-Eeuclidean seems to be better than jaccard
-
-#3. If possible, run the SAS macro to think about how many groups you want to retain. 
-   If you can't run this, discuss how many groups you think are present.
-   
-See SAS code
-for R
-```{r}
-#Evaluate Number of Clusters
-source("http://reuningscherer.net/stat660/R/HClusEval.R.txt")
-hclus_eval(CKD.Norm, dist_m = 'euclidean', clus_m = 'ward', plot_op = T)
-```
-#4. Run k-means clustering on your data. 
-    Compare results to what you got in 3.) 
-    Include a sum of squares vs. k plot and comment on how many groups exist.
+    ```{R, fig.width=6, fig.height=4}
+    library(cluster)
+    library(vegan)
+    library(aplpack)
+    library(fpc)
+    library(ape)
+    library(dplyr)
+    library(foreach)
     
-```{r}
-# Modified Script by Matt Peeples http://www.mattpeeples.net/kmeans.html
-#   Produces screeplot like diagram with randomized comparison based
-#   on randomization within columns (i.e. as if points had been randomly assigned
-#   data values, one from each column.  Keeps total internal SS the same.
+    # Euclidean distance | Get the distance matrix
+    dist <- dist(CKD.Norm, method="euclidean")
+
+    vis.method.hierarchical.cluster <- function(dist, agglomerations=c("ward.D", "ward.D2")){
+        methods <- c("ward.D", "complete", "average", "mcquitty", "median", "centroid", "ward.D2")
+        CKD.dendlist <- foreach(method=methods, .combine=dendlist) %do% {
+            hclust(dist, method=method) %>% as.dendrogram
+        }
+        names(CKD.dendlist) <- methods
+
+        CKD.dendlist_cor <- cor.dendlist(CKD.dendlist)
+        corrplot::corrplot(CKD.dendlist_cor, "pie", "lower")
+        plot.new()
+
+        CKD.dendlist %>%
+            dendlist(which = names(CKD.dendlist) %in% agglomerations) %>%
+            ladderize %>% 
+            set("branches_k_color", k=K) %>% 
+            tanglegram(faster = TRUE)
+    }
+
+    vis.method.hierarchical.cluster(dist, agglomerations=c("ward.D", "ward.D2"))
+    ```
+
+    ```{R, fig.width=6, fig.height=4}
+    vis.hierarchical.cluster <- function(dist, agglomeration="average"){
+        # Clustering;
+        clust <- hclust(dist, method=agglomeration)
+
+        # draw the dendrogram
+        plot(clust, labels=row.names(CKD.numeric), cex=0.5, xlab="", ylab="Distance", main="Clustering for Patients")
+        rect.hclust(clust, k=K)
+        plot.new()
+        # Get membership vector
+        cuts <- stats::cutree(clust, k=K)
+
+        # Make plot of three cluster solution in space desginated by first two principal components
+        clusplot(CKD.Norm, cuts, color=TRUE, shade=TRUE, labels=2, lines=0,
+                 main="Three Cluster Plot, Ward's Method, First two PC")
+        plot.new()
+
+        # Make plot of three cluster solution in space desginated by first two discriminant functions
+        plotcluster(CKD.Norm, cuts, main="Three Cluster Solution in DA Space",
+                    xlab="First Discriminant Function", ylab="Second Discriminant Function")
+    }
+
+    vis.hierarchical.cluster(dist, agglomeration="ward.D")
+
+    vis.hierarchical.cluster(dist, agglomeration="ward.D2")
+    ```
+
+    Method 2: Jaccard Distance
+
+    ```{R, fig.width=6, fig.height=4}
+    # Jaccard distance | Get the distance matrix
+    library(vegan)
+    dist <- vegdist(CKD.Norm, method="jaccard", upper=T)
+
+    vis.method.hierarchical.cluster(dist, agglomerations=c("ward.D", "ward.D2"))
+    ```
+
+    ```{R, fig.width=6, fig.height=4}
+    vis.hierarchical.cluster(dist, agglomeration="ward.D")
+
+    vis.hierarchical.cluster(dist, agglomeration="ward.D2")
+    ```
+
+    Eeuclidean seems to be better than jaccard
+
+3. If possible, run the SAS macro to think about how many groups you want to retain. If you can’t run this, discuss how many groups you think are present.
+   
+    See SAS code
+    for R
+
+    ```{R, fig.width=6, fig.height=4}
+    library("NbClust")
+    nb <- NbClust(CKD.Norm, distance="euclidean", min.nc=2, max.nc=10, method="kmeans")
+
+    library("factoextra")
+    fviz_nbclust(nb)
+    ```
+
+    ```{R}
+    #Evaluate Number of Clusters
+    source("http://reuningscherer.net/stat660/R/HClusEval.R.txt")
+    hclus_eval(CKD.Norm, dist_m = 'euclidean', clus_m = 'ward', plot_op = T)
+    ```
+
+4. Run k-means clustering on your data. Compare results to what you got in 3.) Include a sum of squares vs. k plot and comment on how many groups exist.
+    
+    ```{r}
+    # Modified Script by Matt Peeples http://www.mattpeeples.net/kmeans.html
+    #   Produces screeplot like diagram with randomized comparison based
+    #   on randomization within columns (i.e. as if points had been randomly assigned
+    #   data values, one from each column.  Keeps total internal SS the same.
 
 
-#kdata is just normalized input dataset
-kdata=CKD.Norm
-n.lev=15  #set max value for k
+    #kdata is just normalized input dataset
+    kdata=CKD.Norm
+    n.lev=15  #set max value for k
 
-# Calculate the within groups sum of squared error (SSE) for the number of cluster solutions selected by the user
-wss <- rnorm(10)
-while (prod(wss==sort(wss,decreasing=T))==0) {
-  wss <- (nrow(kdata)-1)*sum(apply(kdata,2,var))
-  for (i in 2:n.lev) wss[i] <- sum(kmeans(kdata, centers=i)$withinss)}
+    # Calculate the within groups sum of squared error (SSE) for the number of cluster solutions selected by the user
+    wss <- rnorm(10)
+    while (prod(wss==sort(wss,decreasing=T))==0) {
+      wss <- (nrow(kdata)-1)*sum(apply(kdata,2,var))
+      for (i in 2:n.lev) wss[i] <- sum(kmeans(kdata, centers=i)$withinss)}
 
-# Calculate the within groups SSE for 250 randomized data sets (based on the original input data)
-k.rand <- function(x){
-  km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
-  rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
-  for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i)$withinss)
-  rand.wss <- as.matrix(rand.wss)
-  return(rand.wss)
-}
+    # Calculate the within groups SSE for 250 randomized data sets (based on the original input data)
+    k.rand <- function(x){
+      km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
+      rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
+      for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i)$withinss)
+      rand.wss <- as.matrix(rand.wss)
+      return(rand.wss)
+    }
 
-rand.mat <- matrix(0,n.lev,250)
+    rand.mat <- matrix(0,n.lev,250)
 
-k.1 <- function(x) { 
-  for (i in 1:250) {
-    r.mat <- as.matrix(suppressWarnings(k.rand(kdata)))
-    rand.mat[,i] <- r.mat}
-  return(rand.mat)
-}
+    k.1 <- function(x) { 
+      for (i in 1:250) {
+        r.mat <- as.matrix(suppressWarnings(k.rand(kdata)))
+        rand.mat[,i] <- r.mat}
+      return(rand.mat)
+    }
 
-# Same function as above for data with < 3 column variables
-k.2.rand <- function(x){
-  rand.mat <- matrix(0,n.lev,250)
-  km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
-  rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
-  for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i)$withinss)
-  rand.wss <- as.matrix(rand.wss)
-  return(rand.wss)
-}
+    # Same function as above for data with < 3 column variables
+    k.2.rand <- function(x){
+      rand.mat <- matrix(0,n.lev,250)
+      km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
+      rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
+      for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i)$withinss)
+      rand.wss <- as.matrix(rand.wss)
+      return(rand.wss)
+    }
 
-k.2 <- function(x){
-  for (i in 1:250) {
-    r.1 <- k.2.rand(kdata)
-    rand.mat[,i] <- r.1}
-  return(rand.mat)
-}
+    k.2 <- function(x){
+      for (i in 1:250) {
+        r.1 <- k.2.rand(kdata)
+        rand.mat[,i] <- r.1}
+      return(rand.mat)
+    }
 
-# Determine if the data data table has > or < 3 variables and call appropriate function above
-if (dim(kdata)[2] == 2) { rand.mat <- k.2(kdata) } else { rand.mat <- k.1(kdata) }
+    # Determine if the data data table has > or < 3 variables and call appropriate function above
+    if (dim(kdata)[2] == 2) { rand.mat <- k.2(kdata) } else { rand.mat <- k.1(kdata) }
 
-# Plot within groups SSE against all tested cluster solutions for actual and randomized data - 1st: Log scale, 2nd: Normal scale
+    # Plot within groups SSE against all tested cluster solutions for actual and randomized data - 1st: Log scale, 2nd: Normal scale
 
-xrange <- range(1:n.lev)
-yrange <- range(log(rand.mat),log(wss))
-plot(xrange,yrange, type='n', xlab='Cluster Solution', ylab='Log of Within Group SSE', main='Cluster Solutions against Log of SSE')
-for (i in 1:250) lines(log(rand.mat[,i]),type='l',col='red')
-lines(log(wss), type="b", col='blue')
-legend('topright',c('Actual Data', '250 Random Runs'), col=c('blue', 'red'), lty=1)
+    xrange <- range(1:n.lev)
+    yrange <- range(log(rand.mat),log(wss))
+    plot(xrange,yrange, type='n', xlab='Cluster Solution', ylab='Log of Within Group SSE', main='Cluster Solutions against Log of SSE')
+    for (i in 1:250) lines(log(rand.mat[,i]),type='l',col='red')
+    lines(log(wss), type="b", col='blue')
+    legend('topright',c('Actual Data', '250 Random Runs'), col=c('blue', 'red'), lty=1)
 
-yrange <- range(rand.mat,wss)
-plot(xrange,yrange, type='n', xlab="Cluster Solution", ylab="Within Groups SSE", main="Cluster Solutions against SSE")
-for (i in 1:250) lines(rand.mat[,i],type='l',col='red')
-lines(1:n.lev, wss, type="b", col='blue')
-legend('topright',c('Actual Data', '250 Random Runs'), col=c('blue', 'red'), lty=1)
+    yrange <- range(rand.mat,wss)
+    plot(xrange,yrange, type='n', xlab="Cluster Solution", ylab="Within Groups SSE", main="Cluster Solutions against SSE")
+    for (i in 1:250) lines(rand.mat[,i],type='l',col='red')
+    lines(1:n.lev, wss, type="b", col='blue')
+    legend('topright',c('Actual Data', '250 Random Runs'), col=c('blue', 'red'), lty=1)
 
-# Calculate the mean and standard deviation of difference between SSE of actual data and SSE of 250 randomized datasets
-r.sse <- matrix(0,dim(rand.mat)[1],dim(rand.mat)[2])
-wss.1 <- as.matrix(wss)
-for (i in 1:dim(r.sse)[2]) {
-  r.temp <- abs(rand.mat[,i]-wss.1[,1])
-  r.sse[,i] <- r.temp}
-r.sse.m <- apply(r.sse,1,mean)
-r.sse.sd <- apply(r.sse,1,sd)
-r.sse.plus <- r.sse.m + r.sse.sd
-r.sse.min <- r.sse.m - r.sse.sd
+    # Calculate the mean and standard deviation of difference between SSE of actual data and SSE of 250 randomized datasets
+    r.sse <- matrix(0,dim(rand.mat)[1],dim(rand.mat)[2])
+    wss.1 <- as.matrix(wss)
+    for (i in 1:dim(r.sse)[2]) {
+      r.temp <- abs(rand.mat[,i]-wss.1[,1])
+      r.sse[,i] <- r.temp}
+    r.sse.m <- apply(r.sse,1,mean)
+    r.sse.sd <- apply(r.sse,1,sd)
+    r.sse.plus <- r.sse.m + r.sse.sd
+    r.sse.min <- r.sse.m - r.sse.sd
 
-# Plot differeince between actual SSE mean SSE from 250 randomized datasets - 1st: Log scale, 2nd: Normal scale 
+    # Plot differeince between actual SSE mean SSE from 250 randomized datasets - 1st: Log scale, 2nd: Normal scale 
 
-xrange <- range(1:n.lev)
-yrange <- range(log(r.sse.plus),log(r.sse.min))
-plot(xrange,yrange, type='n',xlab='Cluster Solution', ylab='Log of SSE - Random SSE', main='Cluster Solustions against (Log of SSE - Random SSE)')
-lines(log(r.sse.m), type="b", col='blue')
-lines(log(r.sse.plus), type='l', col='red')
-lines(log(r.sse.min), type='l', col='red')
-legend('topright',c('SSE - random SSE', 'SD of SSE-random SSE'), col=c('blue', 'red'), lty=1)
+    xrange <- range(1:n.lev)
+    yrange <- range(log(r.sse.plus),log(r.sse.min))
+    plot(xrange,yrange, type='n',xlab='Cluster Solution', ylab='Log of SSE - Random SSE', main='Cluster Solustions against (Log of SSE - Random SSE)')
+    lines(log(r.sse.m), type="b", col='blue')
+    lines(log(r.sse.plus), type='l', col='red')
+    lines(log(r.sse.min), type='l', col='red')
+    legend('topright',c('SSE - random SSE', 'SD of SSE-random SSE'), col=c('blue', 'red'), lty=1)
 
-xrange <- range(1:n.lev)
-yrange <- range(r.sse.plus,r.sse.min)
-plot(xrange,yrange, type='n',xlab='Cluster Solution', ylab='SSE - Random SSE', main='Cluster Solutions against (SSE - Random SSE)')
-lines(r.sse.m, type="b", col='blue')
-lines(r.sse.plus, type='l', col='red')
-lines(r.sse.min, type='l', col='red')
-legend('topright',c('SSE - random SSE', 'SD of SSE-random SSE'), col=c('blue', 'red'), lty=1)
+    xrange <- range(1:n.lev)
+    yrange <- range(r.sse.plus,r.sse.min)
+    plot(xrange,yrange, type='n',xlab='Cluster Solution', ylab='SSE - Random SSE', main='Cluster Solutions against (SSE - Random SSE)')
+    lines(r.sse.m, type="b", col='blue')
+    lines(r.sse.plus, type='l', col='red')
+    lines(r.sse.min, type='l', col='red')
+    legend('topright',c('SSE - random SSE', 'SD of SSE-random SSE'), col=c('blue', 'red'), lty=1)
 
-# Ask for user input - Select the appropriate number of clusters
-choose.clust <- function(){readline("What clustering solution would you like to use? ")} 
-clust.level <- as.integer(choose.clust())
-# Apply K-means cluster solutions - append clusters to CSV file
-fit <- kmeans(kdata, clust.level)
-aggregate(kdata, by=list(fit$cluster), FUN=mean)
-clust.out <- fit$cluster
-kclust <- as.matrix(clust.out)
-kclust.out <- cbind(kclust, CKD.Norm)
-write.table(kclust.out, file="kmeans_out.csv", sep=",")
+    clust.level <- K
+    # Apply K-means cluster solutions - append clusters to CSV file
+    fit <- kmeans(kdata, clust.level)
+    aggregate(kdata, by=list(fit$cluster), FUN=mean)
+    clust.out <- fit$cluster
+    kclust <- as.matrix(clust.out)
+    kclust.out <- cbind(kclust, CKD.Norm)
+    write.table(kclust.out, file="kmeans_out.csv", sep=",")
 
-# Display Principal Components plot of data with clusters identified
+    # Display Principal Components plot of data with clusters identified
 
-clusplot(kdata, fit$cluster, shade=F, labels=2, lines=0, color=T, lty=4, main='Principal Components plot showing K-means clusters')
+    clusplot(kdata, fit$cluster, shade=F, labels=2, lines=0, color=T, lty=4, main='Principal Components plot showing K-means clusters')
 
 
-#Make plot of five cluster solution in space desginated by first two
-#  two discriminant functions
+    #Make plot of five cluster solution in space desginated by first two
+    #  two discriminant functions
 
-plotcluster(kdata, fit$cluster, main="Three Cluster Solution in DA Space",
-            xlab="First Discriminant Function", ylab="Second Discriminant Function")
+    plotcluster(kdata, fit$cluster, main="Three Cluster Solution in DA Space",
+                xlab="First Discriminant Function", ylab="Second Discriminant Function")
 
-```
-#5. Comment on the number of groups that seem to be present based on what you find above.
+    ```
+
+5. Comment on the number of groups that seem to be present based on what you find above.
 
 
