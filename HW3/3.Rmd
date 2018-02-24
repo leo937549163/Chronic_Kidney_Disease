@@ -5,10 +5,11 @@ title: |-
 author: "Lanxin Jiang (lj345), Grace Sun (ys544), Chenglin Lu (cl939)"
 date: '`r Sys.Date()`'
 output:
-  word_document: default
   pdf_document:
     latex_engine: pdflatex
 geometry: margin=0.5in
+header-includes:
+   - \usepackage{float}
 ---
 
 1. Think about what metrics are appropriate for your data based on data type. Write a few sentences about this. Also think about whether you should standardize or transform your data (comment as appropriate).
@@ -52,6 +53,7 @@ geometry: margin=0.5in
     library(ape)
     library(dplyr)
     library(foreach)
+    library(dendextend)
     
     # Euclidean distance | Get the distance matrix
     dist <- dist(CKD.Norm, method="euclidean")
@@ -76,10 +78,10 @@ geometry: margin=0.5in
 
     vis.method.hierarchical.cluster(dist, agglomerations=c("ward.D", "complete"))
     ```
-From the above correlation pie figure, we can easily see that different clustering methods yield very distinct correlation.Here we could compare Ward's method that minimizing internal sum of squares and complete linkage.
 
-From the above dendrograms We see that the two algorithms perform quite different for all of the three clusters. The following analysis compares which performs better.
+    From the above correlation pie figure, we can easily see that different clustering methods yield very distinct correlation.Here we could compare Ward’s method that minimizing internal sum of squares and complete linkage.
 
+    From the above dendrograms We see that the two algorithms perform quite different for all of the three clusters. The following analysis compares which performs better.
 
 
     ```{R, fig.width=6, fig.height=4}
@@ -108,7 +110,7 @@ From the above dendrograms We see that the two algorithms perform quite differen
     ```
 
 
-From the above component and discriminant plot, we could see that the Ward's method did a much better clustering than the complete linkage. 
+    From the above component and discriminant plot, we could see that the Ward’s method did a much better clustering than the complete linkage. 
 
     **Method 2: Jaccard Distance**
 
@@ -118,35 +120,40 @@ From the above component and discriminant plot, we could see that the Ward's met
 
     vis.method.hierarchical.cluster(dist2, agglomerations=c("ward.D", "complete"))
     ```
-The Maximum produce very similar results for different agglomerations. Still we compare the Ward's method and the complete linkage here. These two methods vary a lot im the clustering.
 
+    The Maximum produce very similar results for different agglomerations. Still we compare the Ward’s method and the complete linkage here. These two methods vary a lot in the clustering.
 
     ```{R, fig.width=6, fig.height=4}
     vis.hierarchical.cluster(dist2, agglomeration="ward.D")
     vis.hierarchical.cluster(dist2, agglomeration="complete")
     ```
 
-    The Ward's method seems to cluster different types of patients better than the complete linkage. In addition, the Euclidean distances seems to cluster better than the Maximum distance based on the discrimant plot.  
+    The Ward’s method seems to cluster different types of patients better than the complete linkage. In addition, the Euclidean distances seems to cluster better than the Maximum distance based on the discrimant plot.  
     Thus, we used the below heatmap to see how those clusters display differences in each patient when we use the Euclidean distance.
-```{r}
-clust <- hclust(dist, method="ward.D")
-dend <- as.dendrogram(clust)
-dend <- rotate(dend, 1:213)
-d3heatmap::d3heatmap(as.matrix(CKD.Norm),
-          dendrogram = "row",
-          Rowv = dend,
-          colors = "Greens",
-          # scale = "row",
-          width = 600,
-          show_grid = FALSE)
-```
 
-The rows are ordered based on the order of the hierarchical clustering (using the "ward" method). The colored bar indicates which category each patient belongs to. The color from light green to dark green indicates how the distacne of the patients in each measurement. We can see that some patients are quite diffferent from others in bu(blood urea),  sc(serum creatinine), and sod(sodium), but overall the distinction between each patient is very hard to observe. That might be the reason why different clutering methods would get quite different results.
+    ```{r}
+    library(d3heatmap)
+    clust <- hclust(dist, method="ward.D")
+    dend <- as.dendrogram(clust)
+    dend <- rotate(dend, 1:213)
+    d3heatmap::d3heatmap(as.matrix(CKD.Norm),
+              dendrogram = "row",
+              Rowv = dend,
+              colors = "Greens",
+              # scale = "row",
+              width = 600,
+              show_grid = FALSE)
+    ```
+
+    The rows are ordered based on the order of the hierarchical clustering (using the "ward" method). The colored bar indicates which category each patient belongs to. The color from light green to dark green indicates how the distacne of the patients in each measurement. We can see that some patients are quite diffferent from others in bu(blood urea),  sc(serum creatinine), and sod(sodium), but overall the distinction between each patient is very hard to observe. That might be the reason why different clutering methods would get quite different results.
 
 3. If possible, run the SAS macro to think about how many groups you want to retain. If you can’t run this, discuss how many groups you think are present.
    
     See SAS code
-    for R
+
+    ```{r, out.width="70%", fig.cap="", echo=F, fig.align="center", fig.pos="H"}
+    include_graphics("sas_output.png")
+    ```
 
     ```{R, fig.width=6, fig.height=4}
     library("NbClust")
@@ -234,7 +241,7 @@ The rows are ordered based on the order of the hierarchical clustering (using th
     legend('topright',c('Actual Data', '250 Random Runs'), col=c('blue', 'red'), lty=1)
     ```
 
-The above plots:cluster size vs log of within group SSE and within group SSE, show that within group SSE drops most when there is two clusters.
+    The above plots:cluster size vs log of within group SSE and within group SSE, show that within group SSE drops most when there is two clusters.
     
     ```{r, fig.width=6, fig.height=4}
 
@@ -268,7 +275,7 @@ The above plots:cluster size vs log of within group SSE and within group SSE, sh
     legend('topright',c('SSE - random SSE', 'SD of SSE-random SSE'), col=c('blue', 'red'), lty=1)
     ```
 
-The above two plots also show that SSE - random SSE reaches plateau after two clusters. Thus the cluster level show be two.
+    The above two plots also show that SSE - random SSE reaches plateau after two clusters. Thus the cluster level show be two.
     
     ```{r, fig.width=6, fig.height=4}
     clust.level <- 2
@@ -282,10 +289,11 @@ The above two plots also show that SSE - random SSE reaches plateau after two cl
     #  two discriminant functions
     plotcluster(kdata, fit$cluster, main="Two Cluster Solution in DA Space", xlab="First Discriminant Function", ylab="Second Discriminant Function")
     ```
-   The K-means method shows that there are two clusters for the patients. 
+
+    The K-means method shows that there are two clusters for the patients. 
    
-```{r}
- # try cluster size=3
+    ```{r}
+     # try cluster size=3
     fit <- kmeans(kdata,3)
     aggregate(kdata, by=list(fit$cluster), FUN=mean)
     # Display Principal Components plot of data with clusters identified
@@ -294,8 +302,9 @@ The above two plots also show that SSE - random SSE reaches plateau after two cl
     #Make plot of Two cluster solution in space desginated by first two
     #  two discriminant functions
     plotcluster(kdata, fit$cluster, main="Two Cluster Solution in DA Space", xlab="First Discriminant Function", ylab="Second Discriminant Function")
-```
-When there are three clusters, the clusterig produced by K means and hierachical clustering are very similar.
+    ```
+
+    When there are three clusters, the clusterig produced by K means and hierachical clustering are very similar.
 
 
 5. Comment on the number of groups that seem to be present based on what you find above.
