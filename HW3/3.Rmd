@@ -10,9 +10,10 @@ geometry: margin=0.5in
 
 1. Think about what metrics are appropriate for your data based on data type. Write a few sentences about this. Also think about whether you should standardize or transform your data (comment as appropriate).
 
-    ```{R, echo=F, eval=F}
+    ```{R, echo=F, eval=T}
     setwd("~/Documents/S&DS 563/HW3")
     library(knitr)
+    library(pander)
     knitr::opts_chunk$set(fig.align="center")
     # https://archive.ics.uci.edu/ml/datasets/chronic_kidney_disease
     ```
@@ -26,7 +27,7 @@ geometry: margin=0.5in
     CKD.numeric <- CKD.numeric[complete.cases(CKD.numeric),]
 
     # get standard deviation for each patient
-    round(sqrt(apply(CKD.numeric,2,var)),2)
+    round(sqrt(apply(CKD.numeric,2,var)),2) %>% pander
     CKD.Norm <- scale(CKD.numeric)
     ```
 
@@ -38,9 +39,9 @@ geometry: margin=0.5in
     K <- 3
     ```
 
-    Method 1: Euclidean distance
+    **Method 1: Euclidean distance**
 
-    ```{R, fig.width=6, fig.height=4}
+    ```{R, fig.width=6, fig.height=3.5}
     library(cluster)
     library(vegan)
     library(aplpack)
@@ -82,6 +83,7 @@ geometry: margin=0.5in
         plot(clust, labels=row.names(CKD.numeric), cex=0.5, xlab="", ylab="Distance", main="Clustering for Patients")
         rect.hclust(clust, k=K)
         plot.new()
+        plot.new()
         # Get membership vector
         cuts <- stats::cutree(clust, k=K)
 
@@ -100,9 +102,9 @@ geometry: margin=0.5in
     vis.hierarchical.cluster(dist, agglomeration="ward.D2")
     ```
 
-    Method 2: Jaccard Distance
+    **Method 2: Jaccard Distance**
 
-    ```{R, fig.width=6, fig.height=4}
+    ```{R, fig.width=6, fig.height=3.5}
     # Jaccard distance | Get the distance matrix
     library(vegan)
     dist <- vegdist(CKD.Norm, method="jaccard", upper=T)
@@ -134,21 +136,20 @@ geometry: margin=0.5in
     ```{R}
     #Evaluate Number of Clusters
     source("http://reuningscherer.net/stat660/R/HClusEval.R.txt")
-    hclus_eval(CKD.Norm, dist_m = 'euclidean', clus_m = 'ward', plot_op = T)
+    hclus_eval(CKD.Norm, dist_m='euclidean', clus_m='ward', plot_op=T)
     ```
 
-4. Run k-means clustering on your data. Compare results to what you got in 3.) Include a sum of squares vs. k plot and comment on how many groups exist.
+4. Run k-means clustering on your data. Compare results to what you got in 3. Include a sum of squares vs. k plot and comment on how many groups exist.
     
-    ```{r}
+    ```{r, fig.width=6, fig.height=4}
     # Modified Script by Matt Peeples http://www.mattpeeples.net/kmeans.html
     #   Produces screeplot like diagram with randomized comparison based
     #   on randomization within columns (i.e. as if points had been randomly assigned
     #   data values, one from each column.  Keeps total internal SS the same.
 
-
     #kdata is just normalized input dataset
     kdata=CKD.Norm
-    n.lev=15  #set max value for k
+    n.lev=10  #set max value for k
 
     # Calculate the within groups sum of squared error (SSE) for the number of cluster solutions selected by the user
     wss <- rnorm(10)
@@ -248,16 +249,12 @@ geometry: margin=0.5in
     write.table(kclust.out, file="kmeans_out.csv", sep=",")
 
     # Display Principal Components plot of data with clusters identified
-
     clusplot(kdata, fit$cluster, shade=F, labels=2, lines=0, color=T, lty=4, main='Principal Components plot showing K-means clusters')
-
 
     #Make plot of five cluster solution in space desginated by first two
     #  two discriminant functions
-
     plotcluster(kdata, fit$cluster, main="Three Cluster Solution in DA Space",
                 xlab="First Discriminant Function", ylab="Second Discriminant Function")
-
     ```
 
 5. Comment on the number of groups that seem to be present based on what you find above.
