@@ -155,6 +155,16 @@ header-includes:
     include_graphics("sas_output.png")
     ```
 
+
+    ```{R}
+    #Evaluate Number of Clusters
+    source("http://reuningscherer.net/stat660/R/HClusEval.R.txt")
+    hclus_eval(CKD.Norm, dist_m='euclidean', clus_m='ward', plot_op=T)
+    ```
+
+From the output in SAS and R, we see cluster distance drops when the number of clusters increases.R-squared inreaces with larger number of clusters. Semi-partial RSQ and RMSSTD influctuate. Since we prefer R-squared near 1, and smaller cluster distance, semi-partial RSQ and RMSSTD, We choose to retain 3 groups.
+
+
     ```{R, fig.width=6, fig.height=4}
     library("NbClust")
     nb <- NbClust(CKD.Norm, distance="euclidean", min.nc=2, max.nc=10, method="kmeans")
@@ -162,12 +172,9 @@ header-includes:
     library("factoextra")
     fviz_nbclust(nb)
     ```
+Also, the above frequency distribution shows that three clusters are proposed most. 
 
-    ```{R}
-    #Evaluate Number of Clusters
-    source("http://reuningscherer.net/stat660/R/HClusEval.R.txt")
-    hclus_eval(CKD.Norm, dist_m='euclidean', clus_m='ward', plot_op=T)
-    ```
+
 
 4. Run k-means clustering on your data. Compare results to what you got in 3. Include a sum of squares vs. k plot and comment on how many groups exist.
     
