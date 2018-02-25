@@ -151,20 +151,21 @@ header-includes:
 3. If possible, run the SAS macro to think about how many groups you want to retain. If you can’t run this, discuss how many groups you think are present.
    
     See SAS code:
-  ```{SAS}
-  proc import datafile="C:\Users\lanxin\Desktop\2018Spring\S&DS563\Ch ronic_Kidney_Disease\CKD_norm.csv" 
-out=CKD_norm dbms=csv replace; 
-getnames=yes; 
-run; 
 
-PROC CLUSTER DATA=CKD_norm METHOD=compact RMSSTD RSQ OUTTREE=TREE; 
-id var1; RUN;
+    ```
+    proc import datafile="C:\Users\lanxin\Desktop\2018Spring\S&DS563\Ch ronic_Kidney_Disease\CKD_norm.csv" 
+    out=CKD_norm dbms=csv replace; 
+    getnames=yes; 
+    run; 
 
-*number of clusters;
-filename foo3 url "http://reuningscherer.net/stat660/sas/cluster.sas.txt";
-%include foo3;
-%CLUSTPLOT(TREE); RUN;
-  ```
+    PROC CLUSTER DATA=CKD_norm METHOD=compact RMSSTD RSQ OUTTREE=TREE; 
+    id var1; RUN;
+
+    *number of clusters;
+    filename foo3 url "http://reuningscherer.net/stat660/sas/cluster.sas.txt";
+    %include foo3;
+    %CLUSTPLOT(TREE); RUN;
+    ```
 
     ```{r, out.width="70%", fig.cap="", echo=F, fig.align="center", fig.pos="H"}
     include_graphics("sas_output.png")
@@ -177,7 +178,7 @@ filename foo3 url "http://reuningscherer.net/stat660/sas/cluster.sas.txt";
     hclus_eval(CKD.Norm, dist_m='euclidean', clus_m='ward', plot_op=T)
     ```
 
-From the output in SAS and R, we see cluster distance drops when the number of clusters increases.R-squared inreaces with larger number of clusters. Semi-partial RSQ and RMSSTD influctuate. Since we prefer R-squared near 1, and smaller cluster distance, semi-partial RSQ and RMSSTD, We choose to retain 3 groups.
+    From the output in SAS and R, we see cluster distance drops when the number of clusters increases.R-squared inreaces with larger number of clusters. Semi-partial RSQ and RMSSTD influctuate. Since we prefer R-squared near 1, and smaller cluster distance, semi-partial RSQ and RMSSTD, We choose to retain 3 groups.
 
 
     ```{R, fig.width=6, fig.height=4}
@@ -187,9 +188,8 @@ From the output in SAS and R, we see cluster distance drops when the number of c
     library("factoextra")
     fviz_nbclust(nb)
     ```
-Also, the above frequency distribution shows that three clusters are proposed most. 
 
-
+    Also, the above frequency distribution shows that three clusters are proposed most. 
 
 4. Run k-means clustering on your data. Compare results to what you got in 3. Include a sum of squares vs. k plot and comment on how many groups exist.
     
@@ -331,4 +331,4 @@ Also, the above frequency distribution shows that three clusters are proposed mo
 
 5. Comment on the number of groups that seem to be present based on what you find above.
 
-From results of hierachical clustering, we found three groups could show clear distinction of our dataset, especially when using Euclidian distance and Ward's method. Three clusters also worked well in K-means clustering, but the result of clustering was different. Clustering groups might have clinical interpretation in our dataset. Thus, the number of groups is not an arbitrary discrimination of our dataset, but a general guide for us to have a better understanding of similarities among our samples. 
+    From results of hierachical clustering, we found three groups could show clear distinction of our dataset, especially when using Euclidian distance and Ward's method. Three clusters also worked well in K-means clustering, but the result of clustering was different. Clustering groups might have clinical interpretation in our dataset. Thus, the number of groups is not an arbitrary discrimination of our dataset, but a general guide for us to have a better understanding of similarities among our samples. 
