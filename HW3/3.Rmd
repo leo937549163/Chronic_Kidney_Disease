@@ -35,7 +35,7 @@ header-includes:
     CKD.Norm <- scale(CKD.numeric)
     ```
 
-    There are 213 observations with 11 dimensions in our data. All of the parameters are continuous variables.Because these measurements could be plotted as scatter plots, we could simply measure the distances between the pairs of points by Euclidean distance.There are 213 observations with 11 dimensions in our data. All of the parameters are continuous variables, and scaled parameters have either negative or positive values.Because these measurements could be plotted as scatter plots, we could simply measure the distances between the pairs of points by Euclidean distance. We also tried another metric:the Maxium Distance. 
+    There are 213 observations with 11 dimensions in our data. All of the parameters are continuous variables,and scaled parameters have either negative or positive values.Because these measurements could be plotted as scatter plots, we could simply measure the distances between the pairs of points by Euclidean distance. We also tried another metric, the Maxium Distance, for comparison
 
 2. Try various forms of hierarchical cluster analysis. Try at least two different metrics and two agglomeration methods. Produce dendrograms and comment on what you observe.
 
@@ -79,9 +79,9 @@ header-includes:
     vis.method.hierarchical.cluster(dist, agglomerations=c("ward.D", "complete"))
     ```
 
-    From the above correlation pie figure, we can easily see that different clustering methods yield very distinct correlation.Here we could compare Ward’s method that minimizing internal sum of squares and complete linkage.
+    From the above correlation pie figure, we can easily see that different clustering methods yield very distinct correlation.Here we could compare Ward’s method which minimizes internal sum of squares and the complete linkage method.
 
-    From the above dendrograms We see that the two algorithms perform quite different for all of the three clusters. The following analysis compares which performs better.
+    From the above dendrograms We see that the two algorithms perform quite different for all of the three clusters. The following analysis compares which dendrogram performs better.
 
 
     ```{R, fig.width=6, fig.height=4}
@@ -136,6 +136,7 @@ header-includes:
     clust <- hclust(dist, method="ward.D")
     dend <- as.dendrogram(clust)
     dend <- rotate(dend, 1:213)
+    dend <- color_branches(dend, k=3) 
     d3heatmap::d3heatmap(as.matrix(CKD.Norm),
               dendrogram = "row",
               Rowv = dend,
@@ -149,7 +150,21 @@ header-includes:
 
 3. If possible, run the SAS macro to think about how many groups you want to retain. If you can’t run this, discuss how many groups you think are present.
    
-    See SAS code
+    See SAS code:
+  ```{SAS}
+  proc import datafile="C:\Users\lanxin\Desktop\2018Spring\S&DS563\Ch ronic_Kidney_Disease\CKD_norm.csv" 
+out=CKD_norm dbms=csv replace; 
+getnames=yes; 
+run; 
+
+PROC CLUSTER DATA=CKD_norm METHOD=compact RMSSTD RSQ OUTTREE=TREE; 
+id var1; RUN;
+
+*number of clusters;
+filename foo3 url "http://reuningscherer.net/stat660/sas/cluster.sas.txt";
+%include foo3;
+%CLUSTPLOT(TREE); RUN;
+  ```
 
     ```{r, out.width="70%", fig.cap="", echo=F, fig.align="center", fig.pos="H"}
     include_graphics("sas_output.png")
@@ -178,7 +193,7 @@ Also, the above frequency distribution shows that three clusters are proposed mo
 
 4. Run k-means clustering on your data. Compare results to what you got in 3. Include a sum of squares vs. k plot and comment on how many groups exist.
     
-    ```{r, fig.width=6, fig.height=4}
+    ```{r, warning=F,fig.width=6, fig.height=4}
     # Modified Script by Matt Peeples http://www.mattpeeples.net/kmeans.html
     #   Produces screeplot like diagram with randomized comparison based
     #   on randomization within columns (i.e. as if points had been randomly assigned
@@ -316,4 +331,4 @@ Also, the above frequency distribution shows that three clusters are proposed mo
 
 5. Comment on the number of groups that seem to be present based on what you find above.
 
-
+From results of hierachical clustering, we found three groups could show clear distinction of our dataset, especially when using Euclidian distance and Ward's method. Three clusters also worked well in K-means clustering, but the result of clustering was different. Clustering groups might have clinical interpretation in our dataset. Thus, the number of groups is not an arbitrary discrimination of our dataset, but a general guide for us to have a better understanding of similarities among our samples. 
