@@ -1,0 +1,111 @@
+---
+title: |-
+  S&DS 563 / F&ES 758b - Multivariate Statistics Homework #4
+  Cluster Analysis
+author: "Lanxin Jiang (lj345), Grace Sun (ys544), Chenglin Lu (cl939)"
+date: '`r Sys.Date()`'
+output:
+  pdf_document:
+    latex_engine: pdflatex
+geometry: margin=0.5in
+header-includes:
+   - \usepackage{float}
+---
+
+1. Evaluate the assumptions implicit to Discriminant Analysis for your data - multivariate normality WITHIN each group (i.e. chi-square quantile plots) and similarity of covariances matrices (look at Box's M or just look at raw standard deviations/covariance matrices). Comment on what you find. Comment on whether you think transformations might help your data to meet the assumptions of DA. If you think they might, make some transformations and find out! You may also want to make a matrix plot (or a pairs plot) to get a sense of what your data looks like two variables at a time (use different symbols for each group).
+
+    ```{R, echo=F, eval=T}
+    setwd("~/Documents/S&DS 563/HW3")
+    library(knitr)
+    library(pander)
+    library(MASS)
+    library(biotools)
+    library(DiscriMiner)
+    library(klaR)
+    knitr::opts_chunk$set(fig.align="center")
+    # https://archive.ics.uci.edu/ml/datasets/chronic_kidney_disease
+    ```
+
+    ```{R}
+    Sys.setenv(JAVA_HOME="C:\\Program Files\\Java\\jre-9.0.4\\")
+    library(rJava)
+    library(RWeka)
+    CKD <- read.arff("C:/Users/lanxin/Documents/GitHub/Chronic_Kidney_Disease/Chronic_Kidney_Disease/chronic_kidney_disease_full.arff")
+    CKD.cc<-CKD.cc[complete.cases(CKD),]
+
+    ```
+
+use binary variables: CKD, Hypertension
+use continupus variables: age, bmi
+
+```{r}
+#examine multivariate normality within each group
+ CSQPlot(CKD.cc[CKD.cc$appet=="poor",c(1,2,13,15,18)],label="poor")
+ CSQPlot(CKD.cc[CKD.cc$appet=="good",c(1,2,13,15,18)],label="good")
+```
+Multinormal assumption is achieved
+
+```{r}
+#make scatter plot to look at differences between groups
+plot(CKD.cc[,c(1,2,13,15,18)],col=as.factor(CKD.cc$appet))
+```
+
+```{r}
+#visually compare sample covariance matrices
+print("Covariance Matrix for patients with good appetite")
+cov(CKD.cc[CKD.cc$appet=="good",c(1,2,13,15,18)])
+print("Covariance Matrix for patients with good appetite")
+cov(CKD.cc[CKD.cc$appet=="poor",c(1,2,13,15,18)])
+
+```
+```{r}
+#calculate Box's M statistic
+boxM(CKD.cc[,c(1,2,13,15,18)],CKD.cc[,22])
+```
+p-value is small which is problematic
+covariance is different between groups
+DA assumes
+-Data from both groups comes from a multivariate normal distribution (test with Q-Q Chi-square)
+- Covariance matrices in each group are identical (i.e. same shapes, different locations / centroids)
+However, the second assumption is violated. Thus, scaling might be essenctial.
+Both assumptions are met
+
+
+2. Perform stepwise discriminant analysis on your data. Comment on which model seems the best. Use quadratic discriminant analysis if appropriate.
+```{r}
+#STEPWISE DA
+step1=stepclass(appet~age+bp+sod+hemo+rbcc, data=CKD.cc, method="lda", direction='both')
+step2=stepclass(appet~age+bp+sod+hemo+rbcc, data=CKD.cc, method="lda", direction='both', criteria="AS")
+#Do stepwise quadratic DA
+step3=stepclass(appet~age+bp+sod+hemo+rbcc, data=CKD.cc,  method="qda", direction='both', criteria="AS")
+
+```
+keep hemo and rbcc
+```{r}
+partimat(as.factor(CKD.cc$appet) ~hemo+rbcc,data=CKD.cc,method="qda")
+
+```
+
+
+```{r}
+#run linear discriminant analysis
+CKD.disc=lda(CKD_discrim[,1:2],grouping=CKD_discrim$class)
+CKD.disc
+#get univarite and multivariate comparisons
+CKD.manova=manova(as.matrix(CKD_discrim[,1:2])~CKD_discrim$class)
+summary.manova(CKD.manova,test="Wilks")
+summary.aov(CKD.manova)
+```
+```{r}
+m2 <- lda(appet~age+bp+sod+hemo+rbcc, data=CKD.cc)
+m2
+pred2 <- predict(m2)$appet
+```
+
+
+3. Comment on whether there is statistical evidence that the multivariate group means are different.
+4. How many discriminant functions are significant? What is the relative discriminating power of each function?
+5. Use classification, both regular and leave-one-out to evaluate the discriminating ability of your functions.
+6. Provide some evidence as to which of your original variables are the 'best' discriminators amongst your groups (look at standardized discriminant coefficients).
+7. Make a score plot for the first two or three DA function scores (be sure to use different symbols/colors for each group). Comment on what you see.
+8. Bonus (and optional)- try kernel smoothing or k-nearest neighbors and get the admiration of your professor and TA (and some extra credit)! You'll have to use SAS or R for this.
