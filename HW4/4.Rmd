@@ -31,14 +31,16 @@ header-includes:
     library(rJava)
     library(RWeka)
     CKD <- read.arff("C:/Users/lanxin/Documents/GitHub/Chronic_Kidney_Disease/Chronic_Kidney_Disease/chronic_kidney_disease_full.arff")
-    CKD.cc<-CKD.cc[complete.cases(CKD),]
+    CKD.cc<-CKD[complete.cases(CKD),]
 
     ```
 
-use binary variables: CKD, Hypertension
+use binary variables: appet
 use continupus variables: age, bmi
 
 ```{r}
+#get online function
+source("http://www.reuningscherer.net/STAT660/R/CSQPlot.r.txt")
 #examine multivariate normality within each group
  CSQPlot(CKD.cc[CKD.cc$appet=="poor",c(1,2,13,15,18)],label="poor")
  CSQPlot(CKD.cc[CKD.cc$appet=="good",c(1,2,13,15,18)],label="good")
@@ -62,8 +64,7 @@ cov(CKD.cc[CKD.cc$appet=="poor",c(1,2,13,15,18)])
 #calculate Box's M statistic
 boxM(CKD.cc[,c(1,2,13,15,18)],CKD.cc[,22])
 ```
-p-value is small which is problematic
-covariance is different between groups
+covariance is not different between groups
 DA assumes
 -Data from both groups comes from a multivariate normal distribution (test with Q-Q Chi-square)
 - Covariance matrices in each group are identical (i.e. same shapes, different locations / centroids)
@@ -78,34 +79,138 @@ step1=stepclass(appet~age+bp+sod+hemo+rbcc, data=CKD.cc, method="lda", direction
 step2=stepclass(appet~age+bp+sod+hemo+rbcc, data=CKD.cc, method="lda", direction='both', criteria="AS")
 #Do stepwise quadratic DA
 step3=stepclass(appet~age+bp+sod+hemo+rbcc, data=CKD.cc,  method="qda", direction='both', criteria="AS")
-
 ```
-keep hemo and rbcc
-```{r}
-partimat(as.factor(CKD.cc$appet) ~hemo+rbcc,data=CKD.cc,method="qda")
-
-```
-
+The above stepwise selection shows that the final model should be "appet~rbcc" 
 
 ```{r}
-#run linear discriminant analysis
-CKD.disc=lda(CKD_discrim[,1:2],grouping=CKD_discrim$class)
-CKD.disc
-#get univarite and multivariate comparisons
-CKD.manova=manova(as.matrix(CKD_discrim[,1:2])~CKD_discrim$class)
-summary.manova(CKD.manova,test="Wilks")
-summary.aov(CKD.manova)
+#plot results in space spanned by choosen variables
+partimat(appet~age+bp+sod+hemo+rbcc,data=CKD.cc,method="lda")
 ```
-```{r}
-m2 <- lda(appet~age+bp+sod+hemo+rbcc, data=CKD.cc)
-m2
-pred2 <- predict(m2)$appet
-```
+
+
+
 
 
 3. Comment on whether there is statistical evidence that the multivariate group means are different.
+could use manova to comapare multivarite group means
+```{r}
+manova_ckd <- manova(cbind(age,bp,sod,hemo,rbcc) ~ appet, data = CKD.cc)
+summary.manova(manova_ckd,test="Wilks")
+summary.aov(manova_ckd)
+```
+All the variables are significantly different among different appetite. 
+
 4. How many discriminant functions are significant? What is the relative discriminating power of each function?
+```{r}
+lda_CKD<- lda(appet~age+bp+sod+hemo+rbcc, data=CKD.cc)
+lda_CKD
+```
+
+```{r}
+#normalized coefficient
+sum_coef<-sum(m2$scaling^2)
+norm_coef<-m2$scaling/sum_coef
+scale_coef<-scale(norm_coef)
+```
+We have only one significant function.  
+
+
 5. Use classification, both regular and leave-one-out to evaluate the discriminating ability of your functions.
+```{r}
+pred <- table(CKD.cc$appet, predict(lda_CKD)$class)
+# total percent correct
+round(sum(diag(prop.table(pred))),2)
+```
+91% percentage correct by classification. 
+```{r}
+#cross validated results
+lda_CKDCV<- lda(appet~age+bp+sod+hemo+rbcc, data=CKD.cc,CV=TRUE)
+CKD_CV <-table(CKD.cc$appet, lda_CKDCV$class)
+# total percent correct
+round(sum(diag(prop.table(CKD_CV))),2)
+```
+only 89% correct by leave-one-out cross validation
+
+
 6. Provide some evidence as to which of your original variables are the 'best' discriminators amongst your groups (look at standardized discriminant coefficients).
+
+We only have one function. It's hard to compare.
+We decided to compare by the correction rate of prediction.
+```{r}
+lda_CKD3<-lda_CKD2<-lda_CKD
+lda_CKD2$scaling<-norm_coef
+lda_CKD3$scaling<-scale_coef
+p1 <- predict(lda_CKD,newdata =  CKD.cc[,c(1,2,13,15,18)])
+t1<-table(p1$class, CKD.cc$appet)
+print(paste("The correctness rate for the original variables",round(sum(diag(prop.table(t1))),2)))
+p2 <- predict(lda_CKD2,newdata =  CKD.cc[,c(1,2,13,15,18)])
+t2<-table(p2$class, CKD.cc$appet)
+print(paste("The correctness rate for the normalized coefficients",round(sum(diag(prop.table(t2))),2)))
+p3 <- predict(lda_CKD3,newdata =  CKD.cc[,c(1,2,13,15,18)])
+t3<-table(p3$class, CKD.cc$appet)
+print(paste("The correctness rate for the standardized coefficients",round(sum(diag(prop.table(t3))),2)))
+```
+
+
 7. Make a score plot for the first two or three DA function scores (be sure to use different symbols/colors for each group). Comment on what you see.
+```{r}
+#SCORE PLOTS for linear DA
+ckdlda=lda(CKD.cc[,c(1,2,13,15,18)],grouping=CKD.cc$appet)
+#Calculate scores
+scores=as.matrix(CKD.cc[,c(1,2,13,15,18)])%*%matrix(ckdlda$scaling,ncol=1)
+#only one discriminant function
+boxplot(scores~CKD.cc$appet,lwd=3, col='red', horizontal=T, main="CKD Discriminant Scores by appetitie")
+```
+The discriminant analysis of one significant function discriminates appetite between variables well.
+
 8. Bonus (and optional)- try kernel smoothing or k-nearest neighbors and get the admiration of your professor and TA (and some extra credit)! You'll have to use SAS or R for this.
+kernel smoothing by leave-one-out cross validation to choose h
+Here I use the Nadaraya-Watson kernel estimator,illustrate by two continous variables: age, sc
+$$
+\hat r_n(x)=\sum_{i=1}^nl_i(x)Y_i
+$$
+where the kernel function is Gaussian
+$$
+l_i(x)=\frac{K(\frac{x-x_i}h)}{\sum _{j=1}^nK(\frac{x-x_j}h)}
+$$
+The leave-one-out cross-validation score $\hat R(h)$ can be written as 
+$$
+\hat R(h) = \frac 1 n \sum_{i=1}^n (\frac {Y_i - \hat r_n(x_i)} {1-L_{ii}})^2
+$$
+where $L_{ii} = l_i (x_i)$ is the $i$th diagonal element of the smoothing matrix $L$.
+
+```{r}
+locreg<-function(x,y,bandwidth){
+  n<-length(x)
+  L1<-h_matrix<-matrix(0,ncol=n,nrow=n)
+  for(i in 1:n){
+    L1[i,]<-dnorm((x-x[i])/bandwidth)
+  }
+  for (i in  1:n){
+    for(j  in 1:n){
+      h_matrix[i,j]<-L1[i,j]/sum(L1[,j])
+    }  
+  }
+r_nx<- h_matrix %*% y
+score<-1/n*sum((y-r_nx)^2/(1-diag(h_matrix))^2)
+return(list(r_nx,score,h_matrix))
+}
+```
+
+```{r}
+#choose bd score
+bd_score<-bd<-c(seq(1,20,0.5))
+for (i in 1 : length(bd)){
+  bd_score[i]<-locreg(CKD.cc$age,CKD.cc$sc,bd[i])[[2]]
+}
+plot(bd,bd_score)
+bd_test<-as.data.frame(cbind(bd,bd_score))
+#the best bandwidth of the kernel to minimize the risk
+bd_testorder<-bd_test[with(bd_test,order(bd_score)),]
+#best bandwidth=10
+optimal_bd<-locreg(CKD.cc$age,CKD.cc$sc,10)
+
+plot(CKD.cc$age,CKD.cc$sc,col="red")
+points(CKD.cc$age,optimal_bd[[1]])
+```
+
