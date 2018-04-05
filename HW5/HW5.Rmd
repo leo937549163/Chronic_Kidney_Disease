@@ -1,0 +1,183 @@
+---
+title: |-
+  S&DS 563 / F&ES 758b - Multivariate Statistics Homework #5
+  MANOVA and Multivariate GLM
+author: "Lanxin Jiang (lj345), Grace Sun (ys544), Chenglin Lu (cl939)"
+date: '`r Sys.Date()`'
+output:
+  word_document: default
+  pdf_document:
+    latex_engine: pdflatex
+header-includes: \usepackage{float}
+geometry: margin=0.5in
+---
+
+    ```{R, echo=F, eval=T}
+    #setwd("~/Documents/S&DS 563/HW3")
+    library(knitr)
+    library(pander)
+    library(MASS)
+    library(biotools)
+    library(DiscriMiner)
+    library(klaR)
+    knitr::opts_chunk$set(fig.align="center")
+ 
+    ```
+```{r}
+library(ggplot2)
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+
+
+
+
+    ```{R}
+    Sys.setenv(JAVA_HOME="C:\\Program Files\\Java\\jre-9.0.4\\")
+    library(rJava)
+    library(RWeka)
+    CKD <- read.arff("C:/Users/lanxin/Documents/GitHub/Chronic_Kidney_Disease/Chronic_Kidney_Disease/chronic_kidney_disease_full.arff")
+
+    ```
+    
+    1. For two categorical factors, make interaction plots for each of your response variables. Discuss what you see. If you only have one categorical factor, then provide some plot/discussion of which means are different for which response variables
+    Two categorical factors: Specific Gravity(sg) of urine,Red Blood Cells(rbc)
+    Two continous:Blood Glucose Random(bgr), Serum Creatinine(sc)
+    
+```{r}
+    CKD_hw5<-CKD[,c(3,6,10,12,15)]
+    CKD.cc<-CKD_hw5[complete.cases(CKD_hw5),]
+    CKD.cc$rbc<-as.factor(CKD.cc$rbc)
+    write.csv(CKD.cc,file="C:/Users/lanxin/Documents/GitHub/Chronic_Kidney_Disease/HW5/CKDCC.csv")
+```
+
+
+```{r}
+par(mfrow=c(1,2))
+#this makes the plots
+interaction.plot(CKD.cc$sg,CKD.cc$rbc,CKD.cc$bgr,  lwd=3,col=c("red","blue"),xlab="Specific Gravity",main="Interaction Plot for Blood Glucose Random")
+interaction.plot(CKD.cc$sg,CKD.cc$rbc,CKD.cc$sc,  lwd=3,col=c("red","blue"),xlab="Specific Gravity",main="Interaction Plot for Serum Creatinine")
+```
+These plots suggest that there may be an interaction between specific graviity and red blood cells on serum creatinine and blood glucose. Also suggests that there may not be much difference of RBC on serum creatinine and glucose value. Overall, it seems that normal red blood cells have higher serum creatinine concentration and specific gravity of urine.
+Two plots also indicate that When SG=1.025, there is no observation where red blood cell is abnormal.
+
+2.	Run Two-Way MANOVA for these two categorical factors.  Discuss your results, both univariate and multivariate.  If only one categorical predictor, do one-way MANOVA.
+```{r}
+#fit linear model
+mod1=manova(as.matrix(CKD.cc[,3:4])~CKD.cc$sg + CKD.cc$rbc +CKD.cc$sg*CKD.cc$rbc)
+#get univariate results 
+summary.aov(mod1)
+#get multivariate results summary.manova(mod1) 
+summary.manova(mod1,test="Wilks")
+mod1$coefficients
+```
+
+Univariate Results : For blood glucose, there are significant differences between either sg or rbc. Also, there, there is evidence on an interaction effect. But for serum creatinine, rbc is not a significant factor.
+Multivariate Results : Both covariate and the interaction term is significant. ....
+
+
+The coefficient for sg=1.025*rbc=abnormal is NA, which corresponds to that When SG=1.025, there is no observation where red blood cell is abnormal.
+
+3.	Perform (multivariate) contrasts to compare levels of a particular factor or combinations of factors.  Discuss your results.  If you're using SPSS/R, you won't be able to do the multivariate contrasts.
+See SAS code and rtf output for details
+
+4.	If applicable, add a continuous variable to your model and fit as a multiple-response generalized linear model.  Before you fit the model, make some plots to see if there are linear relationships between your covariates and your responses.
+```{r}
+#relationship
+interaction.plot(CKD.cc$sg,CKD.cc$rbc,CKD.cc$hemo,  lwd=3,col=c("red","blue"),xlab="Specific Gravity",main="Interaction Plot for Hemoglobain")
+#fit linear model
+mod1=lm(as.matrix(CKD.cc[,3:5])~CKD.cc$sg + CKD.cc$rbc +CKD.cc$sg*CKD.cc$rbc)
+#get univariate results 
+mod1
+summary(mod1)
+```
+
+
+5.	Check model assumptions by making a chi-square quantile plot of the residuals.  Modify your model as appropriate based on your findings.
+
+```{r}
+source("http://www.reuningscherer.net/STAT660/R/CSQPlot.r.txt")
+#run the function
+CSQPlot(mod1$residuals,label="residuals")
+```
+```{r}
+#check normality for each variable
+
+#check QQ plot for some numeric variables
+gg.qqplot <- function (variable, title, data) {
+ggplot(data, aes_string(sample=variable)) + ggtitle(title) + stat_qq()
+}
+p2 <- gg.qqplot("bgr", "Blood Glucose Random",CKD.cc)
+p3 <- gg.qqplot("hemo", "Hemoglobin",CKD.cc)
+p4 <- gg.qqplot("sc", "Serum Creatinine",CKD.cc)
+multiplot( p2, p3, p4, cols=2)
+CKD.cc2=CKD.cc
+CKD.cc2$bgr <-sqrt(CKD.cc$bgr)
+CKD.cc2$sc <-sqrt(CKD.cc$sc)
+CKD.cc2$hemo <-log(CKD.cc$hemo)
+p5 <- gg.qqplot("bgr", "Blood Glucose Random",CKD.cc2)
+p6 <- gg.qqplot("hemo", "Hemoglobin",CKD.cc2)
+p7 <- gg.qqplot("sc", "Serum Creatinine",CKD.cc2)
+multiplot( p5, p6, p7, cols=2)
+
+```
+
+
+
+
+```{r}
+
+CKD.cc[,6:8]=log(CKD.cc[,3:5])
+mod2=lm(as.matrix(CKD.cc[,6:8])~CKD.cc$sg + CKD.cc$rbc +CKD.cc$sg*CKD.cc$rbc)
+CSQPlot(mod2$residuals,label="residuals")
+
+```
+
+Boxcox transformation
+```{r}
+library(car)
+trans <- powerTransform(as.matrix(CKD.cc[,3:5])~CKD.cc$sg + CKD.cc$rbc +CKD.cc$sg*CKD.cc$rbc, family="bcPower")
+summary(trans)
+testTransform(trans, c(0, 0,-1))
+testTransform(trans, c(-1, 0,0))
+testTransform(trans, c(0, -1,0))
+ transformedY <- bcPower(with(CKD.cc, cbind(sc,hemo,bgr)),coef(trans, round=TRUE))
+ colnames(transformedY)<-c("sc","hemo","bgr")
+ mod3=lm(transformedY~CKD.cc$sg + CKD.cc$rbc +CKD.cc$sg*CKD.cc$rbc)
+ summary(mod3)
+```
+
+no other way to do it better

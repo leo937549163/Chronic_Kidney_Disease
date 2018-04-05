@@ -5,17 +5,17 @@ title: |-
 author: "Lanxin Jiang (lj345), Grace Sun (ys544), Chenglin Lu (cl939)"
 date: '`r Sys.Date()`'
 output:
+  word_document: default
   pdf_document:
     latex_engine: pdflatex
+header-includes: \usepackage{float}
 geometry: margin=0.5in
-header-includes:
-   - \usepackage{float}
 ---
 
 1. Evaluate the assumptions implicit to Discriminant Analysis for your data - multivariate normality WITHIN each group (i.e. chi-square quantile plots) and similarity of covariances matrices (look at Box's M or just look at raw standard deviations/covariance matrices). Comment on what you find. Comment on whether you think transformations might help your data to meet the assumptions of DA. If you think they might, make some transformations and find out! You may also want to make a matrix plot (or a pairs plot) to get a sense of what your data looks like two variables at a time (use different symbols for each group).
 
     ```{R, echo=F, eval=T}
-    setwd("~/Documents/S&DS 563/HW3")
+    #setwd("~/Documents/S&DS 563/HW3")
     library(knitr)
     library(pander)
     library(MASS)
@@ -108,8 +108,8 @@ lda_CKD
 
 ```{r}
 #normalized coefficient
-sum_coef<-sum(m2$scaling^2)
-norm_coef<-m2$scaling/sum_coef
+sum_coef<-sum(lda_CKD$scaling^2)
+norm_coef<-lda_CKD$scaling/sum_coef
 scale_coef<-scale(norm_coef)
 ```
 We have only one significant function.  
