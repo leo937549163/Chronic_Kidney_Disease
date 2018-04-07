@@ -62,15 +62,12 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 ```
 
-
-
-
+Import Dataset
     ```{R}
     Sys.setenv(JAVA_HOME="C:\\Program Files\\Java\\jre-9.0.4\\")
     library(rJava)
     library(RWeka)
     CKD <- read.arff("C:/Users/lanxin/Documents/GitHub/Chronic_Kidney_Disease/Chronic_Kidney_Disease/chronic_kidney_disease_full.arff")
-
     ```
     
     1. For two categorical factors, make interaction plots for each of your response variables. Discuss what you see. If you only have one categorical factor, then provide some plot/discussion of which means are different for which response variables
