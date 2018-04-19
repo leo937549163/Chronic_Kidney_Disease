@@ -175,6 +175,8 @@ testTransform(trans, c(0, -1,0))
  colnames(transformedY)<-c("sc","hemo","bgr")
  mod3=lm(transformedY~CKD.cc$sg + CKD.cc$rbc +CKD.cc$sg*CKD.cc$rbc)
  summary(mod3)
+ CSQPlot(mod3$residuals,label="residuals")
+
 ```
 
 no other way to do it better

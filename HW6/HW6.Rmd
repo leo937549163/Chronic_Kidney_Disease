@@ -1,0 +1,153 @@
+---
+title: |-
+  S&DS 563 / F&ES 758b - Multivariate Statistics Homework #6 Option B Factor Analysis
+author: "Lanxin Jiang (lj345), Grace Sun (ys544), Chenglin Lu (cl939)"
+date: '`r Sys.Date()`'
+output:
+  word_document: default
+  pdf_document:
+    latex_engine: pdflatex
+header-includes: \usepackage{float}
+geometry: margin=0.5in
+---
+```{R, echo=F, eval=T}
+    #setwd("~/Documents/S&DS 563/HW3")
+    library(knitr)
+    library(pander)
+    library(MASS)
+    library(biotools)
+    library(DiscriMiner)
+    library(klaR)
+    knitr::opts_chunk$set(fig.align="center")
+```
+ 
+    ```{R}
+#Import Dataset
+    Sys.setenv(JAVA_HOME="C:\\Program Files\\Java\\jre-9.0.4\\")
+    library(rJava)
+    library(RWeka)
+    CKD <- read.arff("C:/Users/lanxin/Documents/GitHub/Chronic_Kidney_Disease/Chronic_Kidney_Disease/chronic_kidney_disease_full.arff")
+    ```
+    
+
+####1. Look through indicators (questions). Think about which indicators might be related through latent factors. (nothing to turn in here)
+   
+```{r}
+    CKD.numeric <- CKD[,c(1:2,10:18)]
+    # Remove Missing Observations
+    CKD.numeric <- CKD.numeric[complete.cases(CKD.numeric),]
+```
+The dataset obtained from the UCI Machine Learning Repository describes the chronic kidney disease status and blood measurement of patients from Apollo Hospitals in India. There are 400 observations in this dataset. The following variables might be related through latent factors. 
+			age		-	age	
+			bp		-	blood pressure
+			bgr		-	blood glucose random
+			bu		-	blood urea
+			sc		-	serum creatinine
+			sod		-	sodium
+			pot		-	potassium
+			hemo	-	hemoglobin
+			pcv		-	packed cell volume
+			wbcc	-	white blood cell count
+			rbcc	-	red blood cell count
+After removal of missing values, our dataset contain 215 observattions. 
+
+####2. Compute the correlation matrix between all indicators (you may want to do this in batches). Comment on relationships you do/do not observe.
+
+```{r}
+library(ggcorrplot)
+library(dplyr)
+CKD.numeric %>%
+      cor(use="pairwise.complete.obs", method = "pearson") %>%
+      ggcorrplot(hc.order = TRUE, type = "lower",  lab = TRUE,
+        outline.col = "white",
+        ggtheme = ggplot2::theme_gray,
+        colors = c("#6D9EC1", "white", "#E46726"))
+
+```
+From the above correlation matrix plot, the more "orange" indicates that two variables more positively correlated, and the more "blue" indicates more negative correlation. Overall, the correlations are high  among variables which indicates groupings of homogeneous sets. We could observe some negative correlation and some positive ones. Sc, bu, bp, pot, bgr, age, or wbcc is negatively associated with hemo, rbcc or sod, while hemo, rbcc or sod is positively related with rbcc, sod, or hemo. There might be more than one latent factor.
+
+####3. Compute KMO or other measure (i.e. just look at matrix produced above) to comment on suitability of data for factor analysis.
+
+```{r}
+library(rela)
+fact=paf(as.matrix(CKD.numeric))
+#KMO Kaiser-Meyer-Olkin (KMO) measure of adequacy
+summary(fact)
+```
+
+KMO measure is above 0.8, so factor analysis is meritoriously recommended for this dataset. There are 215 cases for 11 parameters. The sample size is fair for factor analysis. Therefore, the dataset is suitable for factor analysis.
+
+####4. Use Principle Components (or appropriate option in Factor Analysis) to decide on a number of latent factors. You can use Scree Plot, eigenvalue>1, or parallel analysis.
+```{r}
+    library(factoextra)
+
+    pc1 <- princomp(CKD.numeric, cor=TRUE)
+    pc1
+    # Screeplot
+    fviz_screeplot(pc1, choice="eigenvalue")
+
+    source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
+
+    # Parallel analysis plot
+    parallelplot(pc1)
+```
+
+The first two eigenvalues are larger than 1.  The scree plot and the parallel analysis both show that the first two components should retain. Thus, there should be two latent variables. 
+
+####5. Perform a series of factor analyses using orthogonal models. First, try at least two extraction methods (choose from Principle Components, Principle Axis Factoring, Iterative Principle Components, Maximum Likelihood). Use some method for comparing extraction methods to choose a 'best' method (i.e. RMSR or # residuals greater than .05).
+```{r}
+#extraction method:Maximum Likelihood
+fact1=factanal(CKD.numeric,factors=2,rotation="none")
+library(psych)
+#extraction method:Principle Axis Factoring
+fact2=fa(CKD.numeric,nfactors=2,rotate="none", fm="pa")
+#extraction method:iterative PCA
+fact3=fa(CKD.numeric,nfactors=2,rotate="none", SMC=FALSE, fm="pa")
+#function to get RMSR, or proportion of residuals
+comp_fa<-function(method,fact){
+  #get reproduced correlation matrix
+  repro=fact$loadings%*%t(fact$loadings)
+  #residual correlation matrix
+  resid=cor(CKD.numeric)-repro
+  #get root-mean squared residuals
+  len=length(resid[upper.tri(resid)])
+  RMSR=sqrt(sum(resid[upper.tri(resid)]^2)/len)
+  #get proportion of residuals greater than 0.05 in absolute   value
+  prop=sum(rep(1,len)[abs(resid[upper.tri(resid)])>0.05])/len 
+  out<-paste("Method:", method, ", RMSR:" ,round(RMSR,3),", proportion of residuals greater than 0.05 in absolute value", round(prop,3))
+  print(out)
+  return(out)
+}
+
+out1<-comp_fa("Maximum Likelihood",fact1)
+out2<-comp_fa("Principle Axis Factoring",fact2)
+out3<-comp_fa("Iterative PCA",fact3)
+
+
+```
+The above three extration methods without any rotation have pretty similar results. By comparing RMSR, maximum likelihood method is a little bit worse than the other two methods, which might result from the fact that these variables don't follow the multivariate normal distribution. Thus, either principle axis factoring or iterative principle component is a better approach. We will use principle axis factoring for the next question.
+
+####6. Once you've chosen an extraction method, try a varimax and/or a quartimax rotation. Pick one of these rotations and discuss the interpretation of the final factors. Make one or more loading plots as appropriate.
+
+```{r}
+#extraction method:Principle Axis Factoring
+fact21=fa(CKD.numeric,nfactors=2,rotate="varimax", fm="pa")
+fact22=fa(CKD.numeric,nfactors=2,rotate="quartimax", fm="pa")
+out1<-comp_fa("Varimax",fact21)
+out2<-comp_fa("Quartimax",fact22)
+#get loading plot for first two factors
+plot(fact21$loadings, pch=18, col='red',main="Principle Axis Factoring with Varimax Rotation")
+abline(h=0)
+abline(v=0)
+text(fact21$loadings, labels=names(CKD.numeric),cex=0.8)
+plot(fact22$loadings, pch=18, col='red',main="Principle Axis Factoring with Quartimax Rotation")
+abline(h=0)
+abline(v=0)
+text(fact22$loadings, labels=names(CKD.numeric),cex=0.8)
+```
+
+The residuals for the two types of rotation are the same because rotation won't change the the fit between the observed and reproduced correlation matrices. 
+The above two loading plots seem to be different. Varimax ratation enables each indicator to have a high loading on one and only one factor, while quartimax in addition let indicators have high loading on one factor. 
+The loading plot with varimax rotation shows that bu, sc and pot load heavily on factor one; age, wbcc, and bgr load heavily on factor two. The rest load on both factors, and they load heavily on factor one when the rotation is quartimax.
+Thus, it is reasonable to conclude that these measurements of patients are a function of two latent factor. 
+
